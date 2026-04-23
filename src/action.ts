@@ -13,7 +13,10 @@ const PROMPT_VERSION = "v1-2026-04-23-agency";
 const PERSONA_PRIORS = `Your priors are balanced and method-conservative. You weigh regulatory compliance history, environmental conditions, and prior adjudicated cases equally. You cite multiple independent data streams where possible and explicitly acknowledge uncertainty when evidence is sparse. You prefer attributions where both observation (water quality, temperature) and release (EPA TRI) data converge on the same causal story.`;
 // ───────────────────────────────────────────────────────────────────────────
 
-const MODEL = process.env.PERSONA_MODEL ?? "anthropic/claude-3.5-sonnet";
+// MODEL resolved lazily inside askLlm — PERSONA_MODEL arrives via loadCredentialsFromPayload after this module loads.
+function resolveModel(): string {
+  return process.env.PERSONA_MODEL ?? "anthropic/claude-3-haiku";
+}
 const OPENROUTER_BASE = process.env.OPENROUTER_BASE ?? "https://openrouter.ai/api/v1";
 const CONTEXT_LIMIT = 40;
 const RADIUS_DEG = 0.75;   // ~80 km around the event
@@ -194,7 +197,7 @@ async function askLlm(event: EventData, context: ContextItem[]): Promise<LlmResp
       "X-Title": "fish-kill-attribution-agency",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: resolveModel(),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -277,7 +280,7 @@ async function main() {
       cause: b.cause,
       share: b.share,
       persona: PERSONA,
-      model: MODEL,
+      model: resolveModel(),
       prompt_version: PROMPT_VERSION,
       rationale: b.rationale,
       sl_belief: b.sl_belief,
@@ -298,7 +301,7 @@ async function main() {
   console.log(JSON.stringify({
     eventWref,
     persona: PERSONA,
-    model: MODEL,
+    model: resolveModel(),
     commitId: result.commitId,
     beliefsEmitted: beliefs.length,
     causes: beliefs.map((b) => b.cause),
